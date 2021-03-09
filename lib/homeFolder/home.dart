@@ -8,6 +8,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -121,7 +122,7 @@ class HomePageState extends State<HomePage> {
               actionsForegroundColor: Color(0xFF5CE1E6),
               automaticallyImplyTitle: true,
               automaticallyImplyLeading: true,
-              transitionBetweenRoutes: false,
+              transitionBetweenRoutes: true,
               backgroundColor: Colors.black,
               largeTitle: new Text('Home',
                   style: new TextStyle(color: Colors.white),
@@ -245,7 +246,7 @@ class HomePageState extends State<HomePage> {
                             highlightColor: Colors.grey[900],
                             focusColor: Colors.grey[900],
                             onTap: () {
-                              Navigator.push(context, 
+                             Navigator.push(context, 
                               new CupertinoPageRoute(
                                 builder: (context) => new PostDetailsPage(
                                   heroTag: ds['postID'],
@@ -266,6 +267,7 @@ class HomePageState extends State<HomePage> {
                                   arrayOfLikes: ds['likedBy'],
                                   arrayOfDislikes: ds['dislikedBy'],
                                   arrayOfComments: ds['commentedBy'],
+                                  reactedBy: ds['reactedBy'],
                                   //AdminData
                                   adminSoundCloud: ds['adminSoundCloud'],
                                   adminUsername: ds['adminUsername'],
@@ -292,64 +294,6 @@ class HomePageState extends State<HomePage> {
                                           children: [
                                       new Padding(
                                         padding: EdgeInsets.only(bottom: 10.0),
-                                      child: new InkWell(
-                                    onTap: () {
-                                      if(ds['adminSoundCloud'] == 'null') {
-                                        Scaffold.of(context).showSnackBar(noSoundCloudSnackBar);
-                                      } else {
-                                    showBarModalBottomSheet(
-                                      shape: new RoundedRectangleBorder(
-                                        borderRadius: new BorderRadius.circular(0.0)
-                                      ),
-                                      context: context, 
-                                      builder: (context){
-                                        return StatefulBuilder(
-                                          builder: (BuildContext context, StateSetter modalSetState) {
-                                          return new Container(
-                                          height: MediaQuery.of(context).size.height*0.80,
-                                          width: MediaQuery.of(context).size.width,
-                                          color: Color(0xFF181818),
-                                          child: new Stack(
-                                          children: [
-                                            new Positioned(
-                                              top: 0.0,
-                                              left: 0.0,
-                                              right: 0.0,
-                                              bottom: 0.0,
-                                            child: new Column(
-                                              mainAxisAlignment: MainAxisAlignment.start,
-                                              children: [
-                                                new Container(
-                                                  height: MediaQuery.of(context).size.height*0.06,
-                                                  width: MediaQuery.of(context).size.width,
-                                                  color: Colors.white,
-                                                  child: new Center(
-                                                    child: new Text('SoundCloud',
-                                                    style: new TextStyle(color: Colors.grey[700], fontSize: 16.0, fontWeight: FontWeight.bold),
-                                                    )
-                                                  ),
-                                                ),
-                                                new Container(
-                                                  height: MediaQuery.of(context).size.height*0.74,
-                                                  width: MediaQuery.of(context).size.width,
-                                                  child: new WebView(
-                                                    key: _key,
-                                                    javascriptMode: JavascriptMode.unrestricted,
-                                                    initialUrl: ds['adminSoundCloud'],
-                                                    gestureRecognizers: gestureRecognizers,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            ),
-                                            ],
-                                          ),
-                                          );
-                                          },
-                                        );
-                                      });
-                                      }
-                                    },
                                   child: new Container(
                                     height: 40.0,
                                     width: 40.0,
@@ -362,7 +306,7 @@ class HomePageState extends State<HomePage> {
                                       ? new Image.network(ds['adminProfilephoto'], fit: BoxFit.cover)
                                       : new Container(),
                                     ),
-                                  ))),
+                                  )),
                                   new Padding(
                                     padding: EdgeInsets.only(left: 10.0),
                                     child: new Column(
@@ -477,7 +421,6 @@ class HomePageState extends State<HomePage> {
                                       children: [
                                         new Container(
                                           height: MediaQuery.of(context).size.height*0.05,
-                                          //width: MediaQuery.of(context).size.width,
                                           color: Colors.transparent,
                                           child: new Row(
                                             mainAxisAlignment: MainAxisAlignment.start,
@@ -501,8 +444,13 @@ class HomePageState extends State<HomePage> {
                                                 likeRequest(
                                                   ds['postID'], 
                                                   ds['likes'], 
+                                                  ds['subject'],
                                                   widget.currentUser, 
-                                                  ds['likedBy']);
+                                                  widget.currentUserUsername,
+                                                  ds['likedBy'],
+                                                  ds['adminUID'],
+                                                  ds['adminNotificationsToken'],
+                                                  widget.currentUserPhoto);
                                                 deleteDislikeRequest(
                                                   ds['postID'], 
                                                   ds['dislikes'], 
@@ -513,8 +461,13 @@ class HomePageState extends State<HomePage> {
                                                 likeRequest(
                                                   ds['postID'], 
                                                   ds['likes'], 
+                                                  ds['subject'],
                                                   widget.currentUser, 
-                                                  ds['likedBy']);
+                                                  widget.currentUserUsername,
+                                                  ds['likedBy'],
+                                                  ds['adminUID'],
+                                                  ds['adminNotificationsToken'],
+                                                  widget.currentUserPhoto);
                                                 Scaffold.of(context).showSnackBar(likedSnackBar);
                                                 }
                                               }
@@ -600,6 +553,90 @@ class HomePageState extends State<HomePage> {
                                           ),
                                             ],
                                           )
+                                        ),
+                                        new Container(
+                                          child: new Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              new Padding(
+                                                padding: EdgeInsets.only(right: 30.0),
+                                              child: new InkWell(
+                                                onTap: () {
+                                                if(ds['adminSoundCloud'] == 'null') {
+                                                  Scaffold.of(context).showSnackBar(noSoundCloudSnackBar);
+                                                } else {
+                                              showBarModalBottomSheet(
+                                                shape: new RoundedRectangleBorder(
+                                                  borderRadius: new BorderRadius.circular(0.0)
+                                                ),
+                                                context: context, 
+                                                builder: (context){
+                                                  return StatefulBuilder(
+                                                    builder: (BuildContext context, StateSetter modalSetState) {
+                                                    return new Container(
+                                                    height: MediaQuery.of(context).size.height*0.80,
+                                                    width: MediaQuery.of(context).size.width,
+                                                    color: Color(0xFF181818),
+                                                    child: new Stack(
+                                                    children: [
+                                                      new Positioned(
+                                                        top: 0.0,
+                                                        left: 0.0,
+                                                        right: 0.0,
+                                                        bottom: 0.0,
+                                                      child: new Column(
+                                                        mainAxisAlignment: MainAxisAlignment.start,
+                                                        children: [
+                                                          new Container(
+                                                            height: MediaQuery.of(context).size.height*0.06,
+                                                            width: MediaQuery.of(context).size.width,
+                                                            color: Colors.white,
+                                                            child: new Center(
+                                                              child: new Text('SoundCloud',
+                                                              style: new TextStyle(color: Colors.grey[700], fontSize: 16.0, fontWeight: FontWeight.bold),
+                                                              )
+                                                            ),
+                                                          ),
+                                                          new Container(
+                                                            height: MediaQuery.of(context).size.height*0.74,
+                                                            width: MediaQuery.of(context).size.width,
+                                                            child: new WebView(
+                                                              key: _key,
+                                                              javascriptMode: JavascriptMode.unrestricted,
+                                                              initialUrl: ds['adminSoundCloud'],
+                                                              gestureRecognizers: gestureRecognizers,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      ),
+                                                      ],
+                                                    ),
+                                                    );
+                                                    },
+                                                  );
+                                                });
+                                                }
+                                                },
+                                                child: new SvgPicture.asset('lib/assets/soundcloud.svg',
+                                                height: 20.0,
+                                                ),
+                                              /*child: new Container(
+                                                decoration: new BoxDecoration(
+                                                  color: Colors.orange,
+                                                  borderRadius: new BorderRadius.circular(5.0),
+                                                ),
+                                                child: new Padding(
+                                                  padding: EdgeInsets.all(10.0),
+                                                  child: new Text('SoundCloud',
+                                                  style: new TextStyle(color: Colors.black, fontSize: 10.0, fontWeight: FontWeight.bold),
+                                                  ),
+                                                  ),
+                                                ),*/
+                                              ),
+                                            ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),

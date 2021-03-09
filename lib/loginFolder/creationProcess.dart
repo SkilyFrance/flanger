@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,7 +10,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 import '../notificationsService.dart';
 
 
@@ -48,8 +48,8 @@ class ProfileCreationProcessPageState extends State<ProfileCreationProcessPage> 
     _firebaseMessaging.configure(
         onMessage: (Map<String, dynamic> message) async {
           new PushNotificationMessage(
-            title: message['Reverbs'],
-            body: message['subject']);
+            title: message['subject'],
+            body: message['body']);
             print(message);
         }, 
         onLaunch: (Map<String, dynamic> message) async {
@@ -72,6 +72,14 @@ class ProfileCreationProcessPageState extends State<ProfileCreationProcessPage> 
        notificationsToken = notificationGetToken;
      });
      print('NotificationsToken = $notificationsToken');
+      //FirebaseFunctions functions = FirebaseFunctions.instance;
+      //HttpsCallable callable = functions.httpsCallable('sendNotifications');
+      /*callable.call({
+        'currentUser': widget.currentUser,
+      }).whenComplete(() {
+        print('Callable function : done');
+      });*/
+     _firebaseMessaging.subscribeToTopic('sendNotifications').whenComplete(() => print('Notifications topic subscribed'));
     }
   
 
@@ -415,7 +423,7 @@ class ProfileCreationProcessPageState extends State<ProfileCreationProcessPage> 
                              'uid': widget.currentUser,
                              'email': widget.currentUserEmail,
                              'username': _usernameTextEditingController.value.text.toString(),
-                             'soundCloud': _soundCloudTextEditingController.value.text.toString(),
+                             'soundCloud': _soundCloudTextEditingController.value.text.length > 10 ?  _soundCloudTextEditingController.value.text.toString() : 'null',
                              'profilePhoto': filePhotoURL,
                            }).whenComplete(() {
                             //Go to creationProcess

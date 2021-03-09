@@ -4,7 +4,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 
@@ -29,6 +32,7 @@ class PostDetailsPage extends StatefulWidget {
   List<dynamic> arrayOfLikes;
   List<dynamic> arrayOfDislikes;
   List<dynamic> arrayOfComments;
+  Map reactedBy;
   //AdminData
   String adminSoundCloud;
   String adminProfilephoto;
@@ -59,6 +63,7 @@ class PostDetailsPage extends StatefulWidget {
     this.arrayOfLikes,
     this.arrayOfDislikes,
     this.arrayOfComments,
+    this.reactedBy,
     this.adminSoundCloud,
     this.adminProfilephoto,
     this.adminUsername,
@@ -117,6 +122,15 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   //
 
 
+ launchURL(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url, forceWebView: true);
+    } else {
+      throw 'Could not launch $url';
+    }
+ }
+
+
 
   ScrollController _listOfComments = new ScrollController();
   TextEditingController _commentTextController = new TextEditingController();
@@ -126,9 +140,27 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   final Set<Factory> gestureRecognizers = [Factory(() => EagerGestureRecognizer())].toSet();
   UniqueKey _key = UniqueKey();
 
+
+  // Get current user notification token
+  String currentUserNotificationsToken;
+  getCurrentUserNotificationsToken() {
+    FirebaseFirestore.instance
+      .collection('users')
+      .doc(widget.currentUser)
+      .get().then((value) {
+        if(value.exists) {
+          setState(() {
+            currentUserNotificationsToken = value.data()['notificationsToken'];
+          });
+        }
+      });
+  }
+
+
 @override
   void initState() {
-    print('notificatinsToken = ' + widget.adminNotificationsToken);
+    getCurrentUserNotificationsToken();
+    print('Admin notificatinsToken = ' + widget.adminNotificationsToken);
     print('username = ' + widget.currentUserUsername);
     _listOfComments = new ScrollController();
     _commentTextController = new TextEditingController();
@@ -185,6 +217,17 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                           new Padding(
+                            padding: EdgeInsets.only(top: 20.0, left: 20.0, right: 20.0),
+                              child: new Text(widget.postSubject != null
+                              ? widget.postSubject
+                              : '',
+                              textAlign: TextAlign.justify,
+                              style: new TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.bold,
+                              height: 1.3,
+                              ),
+                            ),
+                          ),
+                          new Padding(
                             padding: EdgeInsets.only(top: 20.0),
                           child: new Container(
                             color: Colors.transparent,
@@ -204,64 +247,6 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                           children: [
                                       new Padding(
                                         padding: EdgeInsets.only(bottom: 10.0),
-                                      child: new InkWell(
-                                    onTap: () {
-                                      if(widget.adminSoundCloud == 'null') {
-                                        _scaffoldKey.currentState.showSnackBar(noSoundCloudSnackBar);
-                                      } else {
-                                    showBarModalBottomSheet(
-                                      shape: new RoundedRectangleBorder(
-                                        borderRadius: new BorderRadius.circular(0.0)
-                                      ),
-                                      context: context, 
-                                      builder: (context){
-                                        return StatefulBuilder(
-                                          builder: (BuildContext context, StateSetter modalSetState) {
-                                          return new Container(
-                                          height: MediaQuery.of(context).size.height*0.80,
-                                          width: MediaQuery.of(context).size.width,
-                                          color: Color(0xFF181818),
-                                          child: new Stack(
-                                          children: [
-                                            new Positioned(
-                                              top: 0.0,
-                                              left: 0.0,
-                                              right: 0.0,
-                                              bottom: 0.0,
-                                            child: new Column(
-                                              mainAxisAlignment: MainAxisAlignment.start,
-                                              children: [
-                                                new Container(
-                                                  height: MediaQuery.of(context).size.height*0.06,
-                                                  width: MediaQuery.of(context).size.width,
-                                                  color: Colors.white,
-                                                  child: new Center(
-                                                    child: new Text('SoundCloud',
-                                                    style: new TextStyle(color: Colors.grey[700], fontSize: 16.0, fontWeight: FontWeight.bold),
-                                                    )
-                                                  ),
-                                                ),
-                                                new Container(
-                                                  height: MediaQuery.of(context).size.height*0.74,
-                                                  width: MediaQuery.of(context).size.width,
-                                                  child: new WebView(
-                                                    key: _key,
-                                                    javascriptMode: JavascriptMode.unrestricted,
-                                                    initialUrl: widget.adminSoundCloud,
-                                                    gestureRecognizers: gestureRecognizers,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            ),
-                                            ],
-                                          ),
-                                          );
-                                          },
-                                        );
-                                      });
-                                      }
-                                    },
                                   child: new Container(
                                     height: 40.0,
                                     width: 40.0,
@@ -274,7 +259,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                       ? new Image.network(widget.adminProfilephoto, fit: BoxFit.cover)
                                       : new Container(),
                                     ),
-                                  ))),
+                                  )),
                                   new Padding(
                                     padding: EdgeInsets.only(left: 10.0),
                                     child: new Column(
@@ -352,30 +337,23 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                       )),
                                     ],
                                   ),
-                                  subtitle: new Padding(
+                                  subtitle: widget.postBody != null
+                                  ? new Padding(
                                     padding: EdgeInsets.only(top: 5.0),
-                                    child: new RichText(
+                                    child: new Linkify(
+                                      onOpen: (urlToOpen) {
+                                        launchURL(urlToOpen.url);
+                                      },
+                                      text: widget.postBody,
                                       textAlign: TextAlign.justify,
-                                    text: new TextSpan(
-                                      text: widget.postSubject != null
-                                      ? widget.postSubject
-                                      : '(error on this title)',
-                                      style: new TextStyle(color: Colors.white, fontSize: 15.0, fontWeight: FontWeight.bold,
-                                      height: 1.1,
+                                        style: new TextStyle(color: Colors.grey, fontSize: 14.0, fontWeight: FontWeight.normal,
+                                        height: 1.3,
+                                        ),
                                       ),
-                                      children: [
-                                        new TextSpan(
-                                          text: widget.postBody != null
-                                           ? '  ' + widget.postBody
-                                           : '   ' + ' (Error on this message)',
-                                          style: new TextStyle(color: Colors.grey, fontSize: 14.0, fontWeight: FontWeight.normal,
-                                          height: 1.3,
-                                          ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    ),
+                                    )
+                                  : new Padding(
+                                   padding: EdgeInsets.only(top: 5.0),
+                                   ),
                                   ),
                                   //Comments //Likes //Dislikes //Report
                                   new Padding(
@@ -414,9 +392,14 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                                 //////////////////
                                                 likeRequest(
                                                   widget.postID, 
-                                                  widget.postLikes, 
+                                                  widget.postLikes,
+                                                  widget.postSubject, 
                                                   widget.currentUser, 
-                                                  widget.arrayOfLikes);
+                                                  widget.currentUserUsername,
+                                                  widget.arrayOfLikes,
+                                                  widget.adminUID,
+                                                  widget.adminNotificationsToken,
+                                                  widget.currentUserPhoto);
                                                 deleteDislikeRequest(
                                                   widget.postID, 
                                                   widget.postDislikes,
@@ -432,9 +415,14 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                                 } else {
                                                 likeRequest(
                                                   widget.postID, 
-                                                  widget.postLikes, 
+                                                  widget.postLikes,
+                                                  widget.postSubject, 
                                                   widget.currentUser, 
-                                                  widget.arrayOfLikes);
+                                                  widget.currentUserUsername,
+                                                  widget.arrayOfLikes,
+                                                  widget.adminUID,
+                                                  widget.adminNotificationsToken,
+                                                  widget.currentUserPhoto);
                                                 _scaffoldKey.currentState.showSnackBar(likedSnackBar);
                                                 setState(() {
                                                   widget.arrayOfLikes.add(widget.currentUser);
@@ -535,6 +523,79 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                             ],
                                           )
                                         ),
+                                        new Container(
+                                          child: new Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              new Padding(
+                                                padding: EdgeInsets.only(right: 35.0),
+                                              child: new InkWell(
+                                                onTap: () {
+                                                if(widget.adminSoundCloud == 'null') {
+                                                  Scaffold.of(context).showSnackBar(noSoundCloudSnackBar);
+                                                } else {
+                                              showBarModalBottomSheet(
+                                                shape: new RoundedRectangleBorder(
+                                                  borderRadius: new BorderRadius.circular(0.0)
+                                                ),
+                                                context: context, 
+                                                builder: (context){
+                                                  return StatefulBuilder(
+                                                    builder: (BuildContext context, StateSetter modalSetState) {
+                                                    return new Container(
+                                                    height: MediaQuery.of(context).size.height*0.80,
+                                                    width: MediaQuery.of(context).size.width,
+                                                    color: Color(0xFF181818),
+                                                    child: new Stack(
+                                                    children: [
+                                                      new Positioned(
+                                                        top: 0.0,
+                                                        left: 0.0,
+                                                        right: 0.0,
+                                                        bottom: 0.0,
+                                                      child: new Column(
+                                                        mainAxisAlignment: MainAxisAlignment.start,
+                                                        children: [
+                                                          new Container(
+                                                            height: MediaQuery.of(context).size.height*0.06,
+                                                            width: MediaQuery.of(context).size.width,
+                                                            color: Colors.white,
+                                                            child: new Center(
+                                                              child: new Text('SoundCloud',
+                                                              style: new TextStyle(color: Colors.grey[700], fontSize: 16.0, fontWeight: FontWeight.bold),
+                                                              )
+                                                            ),
+                                                          ),
+                                                          new Container(
+                                                            height: MediaQuery.of(context).size.height*0.74,
+                                                            width: MediaQuery.of(context).size.width,
+                                                            child: new WebView(
+                                                              key: _key,
+                                                              javascriptMode: JavascriptMode.unrestricted,
+                                                              initialUrl: widget.adminSoundCloud,
+                                                              gestureRecognizers: gestureRecognizers,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      ),
+                                                      ],
+                                                    ),
+                                                    );
+                                                    },
+                                                  );
+                                                });
+                                                }
+                                                },
+                                                child: new SvgPicture.asset('lib/assets/soundcloud.svg',
+                                                height: 20.0,
+                                                ),
+
+                                              ),
+                                            ),
+                                            ],
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -584,6 +645,9 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                         padding: EdgeInsets.only(right: 0.0),
                                         child: new InkWell(
                                           onTap: () {
+                                            setState(() {
+                                              widget.reactedBy[widget.currentUser] = currentUserNotificationsToken;
+                                            });
                                             commentRequest(
                                               _commentTextController,
                                               widget.postID,
@@ -594,9 +658,10 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                               widget.currentUserUsername, 
                                               widget.currentUserPhoto,
                                               widget.currentSoundCloud, 
+                                              currentUserNotificationsToken,
                                               _commentTextController.value.text.toString(), 
                                               widget.adminUID, 
-                                              widget.adminNotificationsToken);
+                                              widget.reactedBy);
                                           setState(() {
                                             widget.postComments++;
                                           });
@@ -613,6 +678,9 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                       focusNode: _textFieldFocusNode,
                                       scrollPhysics: new ScrollPhysics(),
                                       onSubmitted: (value) {
+                                        setState(() {
+                                          widget.reactedBy[widget.currentUser] = currentUserNotificationsToken;
+                                        });
                                         commentRequest(
                                           _commentTextController,
                                           widget.postID,
@@ -623,9 +691,11 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                           widget.currentUserUsername, 
                                           widget.currentUserPhoto,
                                           widget.currentSoundCloud, 
+                                          currentUserNotificationsToken,
                                           _commentTextController.value.text.toString(), 
-                                          widget.adminUID, 
-                                          widget.adminNotificationsToken);
+                                          widget.adminUID,
+                                          widget.reactedBy,
+                                          );
                                           setState(() {
                                             widget.postComments++;
                                           });
@@ -708,7 +778,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                  mainAxisAlignment: MainAxisAlignment.start,
                                  children: [
                                    new Padding(
-                                     padding: EdgeInsets.only(bottom: 8.0),
+                                     padding: EdgeInsets.only(bottom: 20.0, top: 20.0),
                                      child: new Container(
                                      child: new ListTile(
                                     title: new Row(
@@ -721,64 +791,6 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                             children: [
                                         new Padding(
                                           padding: EdgeInsets.only(bottom: 10.0),
-                                        child: new InkWell(
-                                      onTap: () {
-                                        if(ds['commentatorSoundCloud'] == 'null') {
-                                          _scaffoldKey.currentState.showSnackBar(noSoundCloudSnackBar);
-                                        } else {
-                                      showBarModalBottomSheet(
-                                        shape: new RoundedRectangleBorder(
-                                          borderRadius: new BorderRadius.circular(0.0)
-                                        ),
-                                        context: context, 
-                                        builder: (context){
-                                          return StatefulBuilder(
-                                            builder: (BuildContext context, StateSetter modalSetState) {
-                                            return new Container(
-                                            height: MediaQuery.of(context).size.height*0.80,
-                                            width: MediaQuery.of(context).size.width,
-                                            color: Color(0xFF181818),
-                                            child: new Stack(
-                                            children: [
-                                              new Positioned(
-                                                top: 0.0,
-                                                left: 0.0,
-                                                right: 0.0,
-                                                bottom: 0.0,
-                                              child: new Column(
-                                                mainAxisAlignment: MainAxisAlignment.start,
-                                                children: [
-                                                  new Container(
-                                                    height: MediaQuery.of(context).size.height*0.06,
-                                                    width: MediaQuery.of(context).size.width,
-                                                    color: Colors.white,
-                                                    child: new Center(
-                                                      child: new Text('SoundCloud',
-                                                      style: new TextStyle(color: Colors.grey[700], fontSize: 16.0, fontWeight: FontWeight.bold),
-                                                      )
-                                                    ),
-                                                  ),
-                                                  new Container(
-                                                    height: MediaQuery.of(context).size.height*0.74,
-                                                    width: MediaQuery.of(context).size.width,
-                                                    child: new WebView(
-                                                      key: _key,
-                                                      javascriptMode: JavascriptMode.unrestricted,
-                                                      initialUrl: ds['commentatorSoundCloud'],
-                                                      gestureRecognizers: gestureRecognizers,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              ),
-                                              ],
-                                            ),
-                                            );
-                                            },
-                                          );
-                                        });
-                                        }
-                                      },
                                     child: new Container(
                                       height: 35.0,
                                       width: 35.0,
@@ -791,7 +803,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                         ? new Image.network(ds['commentatorProfilephoto'], fit: BoxFit.cover)
                                         : new Container(),
                                       ),
-                                    ))),
+                                    )),
                                     new Padding(
                                       padding: EdgeInsets.only(left: 10.0),
                                       child: new Column(
@@ -836,14 +848,94 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                                           ],
                                           ),
                                         ),
+                                          new Container(
+                                          child: new Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              new Padding(
+                                                padding: EdgeInsets.only(right: 20.0),
+                                              child: new InkWell(
+                                                onTap: () {
+                                                if(ds['commentatorSoundCloud'] == 'null') {
+                                                  Scaffold.of(context).showSnackBar(noSoundCloudSnackBar);
+                                                } else {
+                                              showBarModalBottomSheet(
+                                                shape: new RoundedRectangleBorder(
+                                                  borderRadius: new BorderRadius.circular(0.0)
+                                                ),
+                                                context: context, 
+                                                builder: (context){
+                                                  return StatefulBuilder(
+                                                    builder: (BuildContext context, StateSetter modalSetState) {
+                                                    return new Container(
+                                                    height: MediaQuery.of(context).size.height*0.80,
+                                                    width: MediaQuery.of(context).size.width,
+                                                    color: Color(0xFF181818),
+                                                    child: new Stack(
+                                                    children: [
+                                                      new Positioned(
+                                                        top: 0.0,
+                                                        left: 0.0,
+                                                        right: 0.0,
+                                                        bottom: 0.0,
+                                                      child: new Column(
+                                                        mainAxisAlignment: MainAxisAlignment.start,
+                                                        children: [
+                                                          new Container(
+                                                            height: MediaQuery.of(context).size.height*0.06,
+                                                            width: MediaQuery.of(context).size.width,
+                                                            color: Colors.white,
+                                                            child: new Center(
+                                                              child: new Text('SoundCloud',
+                                                              style: new TextStyle(color: Colors.grey[700], fontSize: 16.0, fontWeight: FontWeight.bold),
+                                                              )
+                                                            ),
+                                                          ),
+                                                          new Container(
+                                                            height: MediaQuery.of(context).size.height*0.74,
+                                                            width: MediaQuery.of(context).size.width,
+                                                            child: new WebView(
+                                                              key: _key,
+                                                              javascriptMode: JavascriptMode.unrestricted,
+                                                              initialUrl: ds['commentatorSoundCloud'],
+                                                              gestureRecognizers: gestureRecognizers,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      ),
+                                                      ],
+                                                    ),
+                                                    );
+                                                    },
+                                                  );
+                                                });
+                                                }
+                                                },
+                                                child: new SvgPicture.asset('lib/assets/soundcloud.svg',
+                                                height: 20.0,
+                                                ),
+                                              ),
+                                            ),
+                                            ],
+                                          ),
+                                        ),
                                       ],
                                     ),
                                     subtitle: new Padding(
                                       padding: EdgeInsets.only(top: 5.0),
-                                      child: new Text(
-                                        ds['content'] != null
-                                        ? ds['content']
-                                        : '(error on this comment)',
+                                      child: ds['content'] != null
+                                      ? new Linkify(
+                                      onOpen: (urlToOpen) {
+                                        launchURL(urlToOpen.url);
+                                      },
+                                      text: ds['content'],
+                                      textAlign: TextAlign.justify,
+                                        style: new TextStyle(color: Colors.grey, fontSize: 14.0, fontWeight: FontWeight.normal,
+                                        height: 1.3,
+                                        ),
+                                      )
+                                      : new Text('(error on this comment)',
                                         style: new TextStyle(color: Colors.grey, fontSize: 14.0, fontWeight: FontWeight.normal),
                                         textAlign: TextAlign.justify,
                                       ),

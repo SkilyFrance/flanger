@@ -6,36 +6,43 @@ admin.initializeApp(functions.config().firebase);
 const fcm = admin.messaging();
 
 
-
-exports.sendToTopic = functions.firestore
-  .document("posts/{postID}/comments/{id}")
-  .onCreate((snapshot, context) => {
-    const postID = context.params.postID
-    const name = snapshot.get("commentatorUsername");
-    const subject = snapshot.get("subject");
+exports.sendNotifications = functions.firestore
+  .document("users/{uid}/notifications/{id}")
+  .onCreate((snapshot) => {
+    const name = snapshot.get("lastUserUsername");
+    const subject = snapshot.get("title");
+    const body = snapshot.get("body");
+    const token = snapshot.get("currentNotificationsToken");
     const payload = {
       notification: {
-        title: subject,
-        body: name + 'has commented this post 💬',
+        title: "about : " + subject,
+        body: name + " " + body,
         sound: "default",
       },
     };
-    return fcm.sendToTopic(postID, payload);
+    return fcm.sendToDevice(token, payload);
   });
 
+/*exports.sendNotifications = functions.https.onCall(async (data, context) => {
+  //const uid = context.auth.uid;
+  //console.log('currentUser = ' + uid);
 
-
-/*exports.sendToTopic = functions.firestore
-  .document("posts/" + postID + "/comments/{id}")
+  return functions.firestore
+  .document("users/{uid}/notifications/{id}")
   .onCreate((snapshot) => {
-    const name = snapshot.get("commentatorUsername");
-    const subject = snapshot.get("subject");
+    const name = snapshot.get("lastUserUsername");
+    const subject = snapshot.get("title");
+    const body = snapshot.get("body");
+    const token = snapshot.get("currentNotificationsToken");
     const payload = {
       notification: {
-        title: subject,
-        body: name + 'has commented this post 💬',
+        title: "About : " + subject,
+        body: name + " " + body,
         sound: "default",
       },
     };
-    return fcm.sendToTopic(postID, payload);
-  });*/
+    console.log('listener notifications done :');
+    return fcm.sendToDevice(token, payload);
+  });
+});*/
+

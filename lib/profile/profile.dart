@@ -89,7 +89,7 @@ final Email email = Email(
               actionsForegroundColor: Color(0xFF5CE1E6),
               automaticallyImplyTitle: true,
               automaticallyImplyLeading: true,
-              transitionBetweenRoutes: true,
+              transitionBetweenRoutes: false,
               backgroundColor: Colors.black.withOpacity(0.7),
               largeTitle: new Text('My profile',
                   style: new TextStyle(color: Colors.white),

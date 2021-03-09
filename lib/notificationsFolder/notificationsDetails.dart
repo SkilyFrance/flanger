@@ -91,8 +91,25 @@ class NotificationsDetailsState extends State<NotificationsDetails> {
   final Set<Factory> gestureRecognizers = [Factory(() => EagerGestureRecognizer())].toSet();
   UniqueKey _key = UniqueKey();
 
+
+  // Get current user notification token
+  String currentUserNotificationsToken;
+  getCurrentUserNotificationsToken() {
+    FirebaseFirestore.instance
+      .collection('users')
+      .doc(widget.currentUser)
+      .get().then((value) {
+        if(value.exists) {
+          setState(() {
+            currentUserNotificationsToken = value.data()['notificationsToken'];
+          });
+        }
+      });
+  }
+
 @override
   void initState() {
+    getCurrentUserNotificationsToken();
     _listOfComments = new ScrollController();
     _commentTextController = new TextEditingController();
     _textFieldFocusNode = new FocusNode();
@@ -402,8 +419,13 @@ class NotificationsDetailsState extends State<NotificationsDetails> {
                                                 likeRequest(
                                                   snapshot.data['postID'], 
                                                   snapshot.data['likes'], 
+                                                  snapshot.data['subject'],
                                                   widget.currentUser, 
-                                                  snapshot.data['likedBy']);
+                                                  widget.currentUserUsername,
+                                                  snapshot.data['likedBy'],
+                                                  snapshot.data['adminUID'],
+                                                  snapshot.data['adminNotificationsToken'],
+                                                  widget.currentUserPhoto);
                                                 deleteDislikeRequest(
                                                   snapshot.data['postID'], 
                                                   snapshot.data['dislikes'],
@@ -414,8 +436,13 @@ class NotificationsDetailsState extends State<NotificationsDetails> {
                                                 likeRequest(
                                                   snapshot.data['postID'], 
                                                   snapshot.data['likes'], 
+                                                  snapshot.data['subject'],
                                                   widget.currentUser, 
-                                                  snapshot.data['likedBy']);
+                                                  widget.currentUserUsername,
+                                                  snapshot.data['likedBy'],
+                                                  snapshot.data['adminUID'],
+                                                  snapshot.data['adminNotificationsToken'],
+                                                  widget.currentUserPhoto);
                                                 _scaffoldKey.currentState.showSnackBar(likedSnackBar);
                                                 }
                                               }
@@ -562,9 +589,11 @@ class NotificationsDetailsState extends State<NotificationsDetails> {
                                               widget.currentUserUsername, 
                                               widget.currentUserPhoto,
                                               widget.currentSoundCloud, 
+                                              currentUserNotificationsToken,
                                               _commentTextController.value.text.toString(), 
-                                              snapshot.data['adminUID'], 
-                                              snapshot.data['adminNotificationsToken']);
+                                              snapshot.data['adminUID'],
+                                              snapshot.data['reactedBy'],
+                                              );
                                           },
                                           highlightColor: Colors.transparent,
                                           splashColor: Colors.transparent,
@@ -587,10 +616,12 @@ class NotificationsDetailsState extends State<NotificationsDetails> {
                                           widget.currentUser, 
                                           widget.currentUserUsername, 
                                           widget.currentUserPhoto,
-                                          widget.currentSoundCloud, 
+                                          widget.currentSoundCloud,
+                                          currentUserNotificationsToken,
                                           _commentTextController.value.text.toString(), 
-                                          snapshot.data['adminUID'], 
-                                          snapshot.data['adminNotificationsToken']);
+                                          snapshot.data['adminUID'],
+                                          snapshot.data['reactedBy'],
+                                          );
                                       },
                                       onChanged: (value) {
                                         if(_commentTextController.text.length > 0 && _commentTextController.text.length == 1) {

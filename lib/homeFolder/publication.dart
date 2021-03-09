@@ -124,7 +124,7 @@ class PublicationPageState extends State<PublicationPage> {
                 width: MediaQuery.of(context).size.width,
               ),
               new Container(
-                child: new Text( 'Subject',
+                child: new Text( 'Main subject / question',
                 style: new TextStyle(color: Colors.grey[700], fontSize: 16.0, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -161,7 +161,7 @@ class PublicationPageState extends State<PublicationPage> {
                 width: MediaQuery.of(context).size.width,
               ),
               new Container(
-                child: new Text("Body",
+                child: new Text("Explanation",
                 style: new TextStyle(color: Colors.grey[700], fontSize: 16.0, fontWeight: FontWeight.bold),
                 ),
               ),
