@@ -342,7 +342,7 @@ final Email email = Email(
                           onTap: () {
                            final RenderBox box = context.findRenderObject();
                            Share.share(
-                             "Hey, Join me on Flanger. it's a collaborative Q&A between electronic music producers. Download it here : . Hope to see you 🚀",
+                             "Hey, Join me on Flanger. it's a collaborative Q&A between electronic music producers. Download it here : ****** . Hope to see you 🚀",
                              sharePositionOrigin: box.localToGlobal(Offset.zero)&box.size).whenComplete(() {
                                print('Ok');
                              });
