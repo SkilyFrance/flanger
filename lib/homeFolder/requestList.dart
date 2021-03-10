@@ -8,6 +8,7 @@ FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
 
 
 likeRequest(String postID, int likes, String subject, String currentUser, String currentUsername, List<dynamic> likedByList, String adminUID, String adminNotificationToken, String currentProfilephoto) {
+  int _timestampCreation = DateTime.now().microsecondsSinceEpoch;
   FirebaseFirestore.instance
     .collection('posts')
     .doc(postID)
@@ -23,9 +24,11 @@ likeRequest(String postID, int likes, String subject, String currentUser, String
         .collection('users')
         .doc(adminUID)
         .collection('notifications')
-        .doc()
+        .doc(_timestampCreation.toString()+currentUser)
         .set({
-          'body': 'has liked this post',
+          'alreadySeen': false,
+          'notificationID': _timestampCreation.toString()+currentUser,
+          'body': 'has liked this post 👍',
           'currentNotificationsToken': adminNotificationToken,
           'lastUserProfilephoto': currentProfilephoto,
           'lastUserUID': currentUser,
@@ -105,9 +108,11 @@ commentRequest(TextEditingController textEditingController, String postID, int c
               .collection('users')
               .doc(key.toString())
               .collection('notifications')
-              .doc()
+              .doc(_timestampCreation.toString()+currentUser)
               .set({
-                'body': 'has commented this post',
+                'alreadySeen': false,
+                'notificationID': _timestampCreation.toString()+currentUser,
+                'body': 'has commented this post 💬',
                 'currentNotificationsToken': value.toString(),
                 'lastUserProfilephoto': currentProfilephoto,
                 'lastUserUID': currentUser,

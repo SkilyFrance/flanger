@@ -33,6 +33,7 @@ class ProfileCreationProcessPageState extends State<ProfileCreationProcessPage> 
   bool _creationInProgress = false;
   var notificationsToken = 'null';
 
+
   @override
   void initState() {
     _usernameTextEditingController = new TextEditingController();
@@ -72,13 +73,6 @@ class ProfileCreationProcessPageState extends State<ProfileCreationProcessPage> 
        notificationsToken = notificationGetToken;
      });
      print('NotificationsToken = $notificationsToken');
-      //FirebaseFunctions functions = FirebaseFunctions.instance;
-      //HttpsCallable callable = functions.httpsCallable('sendNotifications');
-      /*callable.call({
-        'currentUser': widget.currentUser,
-      }).whenComplete(() {
-        print('Callable function : done');
-      });*/
      _firebaseMessaging.subscribeToTopic('sendNotifications').whenComplete(() => print('Notifications topic subscribed'));
     }
   

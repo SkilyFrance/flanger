@@ -38,16 +38,20 @@ class PermissionDemandClass {
       builder: (BuildContext context) => 
       new CupertinoAlertDialog(
         title: new Text("Notifications",
-        style: new TextStyle(color: Colors.white, fontSize: 16.0, fontWeight: FontWeight.bold),
+        style: new TextStyle(color: Colors.white, fontSize: 15.0, fontWeight: FontWeight.bold,
+        height: 1.3,
+        ),
         ),
         content: new Padding(
           padding: EdgeInsets.only(top: 10.0),
-          child: new Text("You will be redirected to your settings. After restart Reverbs",
-          style: new TextStyle(color: Colors.white, fontSize: 13.0, fontWeight: FontWeight.normal),
+          child: new Text("You will be redirected to your settings. Think to push again on Notifications button.",
+          style: new TextStyle(color: Colors.white, fontSize: 13.0, fontWeight: FontWeight.normal,
+          height: 1.3,
+          ),
         )),
         actions: <Widget>[
           new CupertinoDialogAction(
-            child: Text("ok", style: new TextStyle(fontSize: 14.0, color: Colors.blue, fontWeight: FontWeight.normal)),
+            child: Text("OK", style: new TextStyle(fontSize: 14.0, color: Colors.blue, fontWeight: FontWeight.bold)),
             onPressed: () {
               openAppSettings();
               Navigator.pop(context);

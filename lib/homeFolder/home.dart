@@ -74,6 +74,12 @@ class HomePageState extends State<HomePage> {
     textAlign: TextAlign.center,
     style: new TextStyle(color: Colors.white, fontSize: 15.0, fontWeight: FontWeight.bold),
     ));
+  final reportedPostSnachBar = new SnackBar(
+    backgroundColor: Colors.redAccent,
+    content: new Text('This post has been reported.',
+    textAlign: TextAlign.center,
+     style: new TextStyle(color: Colors.black, fontSize: 15.0, fontWeight: FontWeight.bold),
+    ));
 
   //
 
@@ -245,6 +251,34 @@ class HomePageState extends State<HomePage> {
                             splashColor: Colors.grey[900],
                             highlightColor: Colors.grey[900],
                             focusColor: Colors.grey[900],
+                            onLongPress: () {
+                            return showDialog(
+                              context: context, 
+                              builder: (_) => new CupertinoAlertDialog(
+                                content: new Text("Report this post ?",
+                                style: new TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                                actions: <Widget>[
+                                  new CupertinoDialogAction(
+                                    onPressed: (){
+                                      Navigator.pop(context);
+                                    },
+                                    child: new Text('No, thanks',
+                                    ),
+                                    ),
+                                    new CupertinoDialogAction(
+                                      onPressed: (){
+                                        Navigator.pop(context);
+                                        Scaffold.of(context).showSnackBar(reportedPostSnachBar);
+                                      },
+                                      child: new Text('Report',
+                                      style: new TextStyle(color: Colors.red),
+                                      ),
+                                      ),
+                                ],
+                              ),
+                            );
+                            },
                             onTap: () {
                              Navigator.push(context, 
                               new CupertinoPageRoute(

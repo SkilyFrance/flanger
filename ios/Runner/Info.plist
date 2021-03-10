@@ -39,6 +39,8 @@
 	<string>Necessary to optimize Flanger</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Necessary to get your location on Flanger.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Necessary to get your location on Flanger.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Necessary to optimize Flanger</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -57,8 +59,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

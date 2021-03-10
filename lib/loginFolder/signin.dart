@@ -177,7 +177,7 @@ class SignInPageState extends State<SignInPage> {
                                   Navigator.pushAndRemoveUntil(context, new PageRouteBuilder(pageBuilder: (_,__,___) => 
                                   new NavigationPage(
                                   currentUser: authResult.user.uid, 
-                                  currentUserUsername: value.data()['userName'],
+                                  currentUserUsername: value.data()['username'],
                                   currentUserPhoto: value.data()['profilePhoto'],
                                   notificationsToken: value.data()['notificationsToken']
                                   )), 

@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flanger_app/notificationsFolder/notificationsDetails.dart';
+import 'package:flanger_app/permissions.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 class NotificationsPage extends StatefulWidget {
@@ -27,6 +30,38 @@ class NotificationsPage extends StatefulWidget {
 
 class NotificationsPageState extends State<NotificationsPage> {
 
+FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
+String notificationsToken;
+bool notificationInProgress = false;
+
+
+  final notificationActivated = new SnackBar(
+    backgroundColor: Color(0xFF5CE1E6),
+    content: new Text('Successfully activated 🔔',
+    textAlign: TextAlign.center,
+    style: new TextStyle(color: Colors.black, fontSize: 15.0, fontWeight: FontWeight.bold),
+    ));
+
+notificationAlertDialog() {
+  return showDialog(
+    barrierDismissible: false,
+    context: context, 
+    builder: (_) => new CupertinoAlertDialog(
+      title: new Text('Notifications',
+      style: new TextStyle(color: Colors.white, fontSize: 15.0, fontWeight: FontWeight.bold,
+      height: 1.3,
+      ),
+      ),
+      content: new Container(
+        child: new Padding(
+          padding: EdgeInsets.all(8.0),
+          child: new CupertinoActivityIndicator(radius: 8.0, animating: true),
+          ),
+      ),
+    ),
+  );
+}
+
   String currentSoundCloud;
   String currentNotificationsToken;
   getCurrentSoundCloud() {
@@ -46,6 +81,7 @@ class NotificationsPageState extends State<NotificationsPage> {
 @override
   void initState() {
     print(widget.currentUser);
+    print(widget.currentUserUsername);
     getCurrentSoundCloud();
     super.initState();
   }
@@ -69,6 +105,63 @@ class NotificationsPageState extends State<NotificationsPage> {
               largeTitle: new Text('Notifications',
                   style: new TextStyle(color: Colors.white),
                   ),
+                  trailing: new Material(
+                    color: Colors.transparent,
+                    child: new IconButton(
+                      highlightColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      splashColor: Colors.transparent,
+                    icon: new Icon(CupertinoIcons.bell, color: Colors.grey, size: 25.0),
+                    onPressed: () async {
+                      var notificationPermission = await Permission.notification.status;
+                      if(notificationPermission.isGranted) {
+                        notificationAlertDialog();
+                        var notificationGetToken = await _firebaseMessaging.getToken();
+                        setState(() {
+                          notificationsToken = notificationGetToken;
+                        });
+                        FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(widget.currentUser)
+                          .update({
+                            'notificationsToken': notificationsToken,
+                          }).whenComplete(() {
+                            print('Cloud Firestore : notificationsToken = $notificationsToken');
+                            _firebaseMessaging.subscribeToTopic('sendNotifications').whenComplete(() => print('Notifications topic subscribed'));
+                            Navigator.pop(context);
+                            Scaffold.of(context).showSnackBar(notificationActivated);
+                          });
+                      }
+                      if(notificationPermission.isUndetermined) {
+                        await Permission.notification.request();
+                        if(await Permission.notification.request().isGranted) {
+                        notificationAlertDialog();
+                        var notificationGetToken = await _firebaseMessaging.getToken();
+                        setState(() {
+                          notificationsToken = notificationGetToken;
+                        });
+                        FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(widget.currentUser)
+                          .update({
+                            'notificationsToken': notificationsToken,
+                          }).whenComplete(() {
+                            print('Cloud Firestore : notificationsToken = $notificationsToken');
+                            _firebaseMessaging.subscribeToTopic('sendNotifications').whenComplete(() => print('Notifications topic subscribed'));
+                            Navigator.pop(context);
+                            Scaffold.of(context).showSnackBar(notificationActivated);
+                          });
+                        }
+                        if(await Permission.notification.request().isDenied || await Permission.notification.request().isRestricted) {
+                          PermissionDemandClass().iosDialogNotifications(context);
+                        }
+                      }
+                      if(notificationPermission.isDenied || notificationPermission.isRestricted) {
+                        PermissionDemandClass().iosDialogNotifications(context);
+                      }
+                    },
+                  ),
+                ),
             ),
           ];
         }, 
@@ -128,11 +221,22 @@ class NotificationsPageState extends State<NotificationsPage> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         new Container(
+                         color: ds['alreadySeen'] == false ? Colors.deepPurpleAccent.withOpacity(0.2) : Colors.transparent,
                           child: new InkWell(
                             splashColor: Colors.grey[900],
                             highlightColor: Colors.grey[900],
                             focusColor: Colors.grey[900],
                             onTap: () {
+                              if(ds['alreadySeen'] == false) {
+                                FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(widget.currentUser)
+                                  .collection('notifications')
+                                  .doc(ds['notificationID'])
+                                  .update({
+                                    'alreadySeen': true
+                                  }).whenComplete(() => print('Cloud Firestore : notificationID, already seen set to true'));
+                              } else {}
                               Navigator.push(context, 
                               new CupertinoPageRoute(
                                 builder: (context) => new NotificationsDetails(
